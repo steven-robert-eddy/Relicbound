@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Relicbound.Gameplay — game-specific systems built on Core primitives.
+
+    May depend on Relicbound.Core. Must never reference Godot, and must never
+    reference the Godot game project.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Relicbound.Gameplay</RootNamespace>
+    <AssemblyName>Relicbound.Gameplay</AssemblyName>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Relicbound.Core/Relicbound.Core.csproj" />
+  </ItemGroup>
+
+</Project>

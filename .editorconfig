@@ -1,0 +1,101 @@
+# Relicbound editor configuration.
+#
+# This file encodes the naming rules from docs/CODING_STANDARDS.md so that
+# tooling agrees with the written standard instead of fighting it.
+#
+# If you change a naming rule here, change it in CODING_STANDARDS.md too.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{md,markdown}]
+# Markdown uses trailing double-space for hard line breaks.
+trim_trailing_whitespace = false
+indent_size = 2
+
+[*.{json,jsonc,yml,yaml}]
+indent_size = 2
+
+[*.{csproj,props,targets,sln,xml}]
+indent_size = 2
+
+[*.{godot,tscn,tres,import,cfg}]
+# Godot writes these files itself; do not let an editor reformat them.
+indent_style = tab
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[*.cs]
+indent_size = 4
+
+# --- Language conventions -------------------------------------------------
+
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_prefer_braces = true:warning
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:silent
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_style_readonly_field = true:suggestion
+
+# --- Naming rules (mirrors docs/CODING_STANDARDS.md) ----------------------
+
+# Types and methods: PascalCase
+dotnet_naming_symbols.types_and_methods.applicable_kinds = class,struct,interface,enum,delegate,method,property,event
+dotnet_naming_symbols.types_and_methods.applicable_accessibilities = *
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_rule.types_and_methods_are_pascal_case.symbols = types_and_methods
+dotnet_naming_rule.types_and_methods_are_pascal_case.style = pascal_case
+dotnet_naming_rule.types_and_methods_are_pascal_case.severity = warning
+
+# Interfaces: IPascalCase
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = *
+dotnet_naming_style.i_prefixed.capitalization = pascal_case
+dotnet_naming_style.i_prefixed.required_prefix = I
+dotnet_naming_rule.interfaces_are_i_prefixed.symbols = interfaces
+dotnet_naming_rule.interfaces_are_i_prefixed.style = i_prefixed
+dotnet_naming_rule.interfaces_are_i_prefixed.severity = warning
+
+# Locals and parameters: camelCase
+dotnet_naming_symbols.locals_and_parameters.applicable_kinds = parameter,local
+dotnet_naming_symbols.locals_and_parameters.applicable_accessibilities = *
+dotnet_naming_style.camel_case.capitalization = camel_case
+dotnet_naming_rule.locals_are_camel_case.symbols = locals_and_parameters
+dotnet_naming_rule.locals_are_camel_case.style = camel_case
+dotnet_naming_rule.locals_are_camel_case.severity = warning
+
+# Private fields: _camelCase
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+dotnet_naming_rule.private_fields_are_underscore_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_are_underscore_camel_case.style = underscore_camel_case
+dotnet_naming_rule.private_fields_are_underscore_camel_case.severity = warning
+
+# Constants: UPPER_CASE.
+# NOTE: this is the project standard from docs/CODING_STANDARDS.md. It is
+# deliberately NOT the idiomatic C# convention (which is PascalCase). It is
+# set here so analyzers do not flag the house style. If the standard is ever
+# changed to PascalCase, update both files together.
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_style.all_upper.capitalization = all_upper
+dotnet_naming_style.all_upper.word_separator = _
+dotnet_naming_rule.constants_are_upper_case.symbols = constants
+dotnet_naming_rule.constants_are_upper_case.style = all_upper
+dotnet_naming_rule.constants_are_upper_case.severity = warning

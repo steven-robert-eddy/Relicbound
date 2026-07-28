@@ -1,0 +1,27 @@
+<Project Sdk="Godot.NET.Sdk/4.7.0">
+
+  <!--
+    Relicbound.Game — the Godot presentation layer.
+
+    This is the ONLY project in the repository allowed to reference Godot.
+    Everything here reads game state and draws it, or turns player input into
+    a request that the simulation resolves. No damage numbers, no artifact
+    rules, no spell logic. See docs/CODING_STANDARDS.md.
+
+    Dependencies flow one way: Game -> Content -> Gameplay -> Core.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>Relicbound.Game</RootNamespace>
+    <AssemblyName>Relicbound.Game</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../src/Relicbound.Core/Relicbound.Core.csproj" />
+    <ProjectReference Include="../src/Relicbound.Gameplay/Relicbound.Gameplay.csproj" />
+    <ProjectReference Include="../src/Relicbound.Content/Relicbound.Content.csproj" />
+  </ItemGroup>
+
+</Project>

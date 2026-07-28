@@ -1,0 +1,21 @@
+<Project>
+
+  <!--
+    Settings shared by every project in the repository.
+
+    Deliberately does NOT set TargetFramework: Godot.NET.Sdk manages the
+    target framework for the game project, and setting it here would be
+    overridden anyway. Each project declares its own.
+  -->
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+; Bootstrap scene. Intentionally empty.
+;
+; This exists so the project opens and runs in Godot from the first commit,
+; which makes the scaffold verifiable. It is not the combat scene and it is
+; not a place to put game logic — see docs/CODING_STANDARDS.md.
+;
+; Milestone 1 replaces this with a combat sandbox scene.
+
+[node name="Main" type="Node2D"]

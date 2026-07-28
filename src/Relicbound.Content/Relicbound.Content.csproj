@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Relicbound.Content — content data files and the loaders that read them.
+
+    The JSON under this project is the game's content. Adding a new artifact,
+    spell, rune, or enemy should mean adding a data file here, not writing
+    code. Content files are embedded so the simulation can be loaded and
+    tested headlessly, with no filesystem or Godot resource dependency.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Relicbound.Content</RootNamespace>
+    <AssemblyName>Relicbound.Content</AssemblyName>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Relicbound.Core/Relicbound.Core.csproj" />
+    <ProjectReference Include="../Relicbound.Gameplay/Relicbound.Gameplay.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Artifacts/**/*.json" />
+    <EmbeddedResource Include="Enemies/**/*.json" />
+    <EmbeddedResource Include="Spells/**/*.json" />
+    <EmbeddedResource Include="Runes/**/*.json" />
+    <EmbeddedResource Include="Encounters/**/*.json" />
+  </ItemGroup>
+
+</Project>

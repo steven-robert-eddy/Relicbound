@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Relicbound.Core — pure simulation primitives.
+
+    ARCHITECTURAL RULE: this project must never reference Godot, and must
+    never reference Relicbound.Gameplay. Dependencies flow downward only.
+    The absence of a Godot reference here is not a convention — it is what
+    makes `using Godot;` in Core a compile error.
+
+    Relicbound.Core.Tests contains a test that enforces this automatically.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Relicbound.Core</RootNamespace>
+    <AssemblyName>Relicbound.Core</AssemblyName>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,70 @@
+# ---------------------------------------------------------------------------
+# Godot 4
+# ---------------------------------------------------------------------------
+
+# Godot's per-machine import cache and editor state. Never commit these:
+# they are regenerated on open and cause constant spurious diffs.
+.godot/
+game/.godot/
+
+# Exported builds
+export/
+build/
+*.pck
+*.zip
+
+# Godot export presets often contain machine-local paths and signing keys.
+# Uncomment if you add keystores or local paths to it.
+# export_presets.cfg
+
+# ---------------------------------------------------------------------------
+# .NET / C#
+# ---------------------------------------------------------------------------
+
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.userosscache
+*.suo
+*.cache
+*.dll
+*.pdb
+*.exe
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!packages/build/
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coverem
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# ---------------------------------------------------------------------------
+# IDEs
+# ---------------------------------------------------------------------------
+
+.vs/
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.sln.iml
+*.DotSettings.user
+
+# ---------------------------------------------------------------------------
+# OS
+# ---------------------------------------------------------------------------
+
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
