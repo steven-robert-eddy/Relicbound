@@ -8,5 +8,7 @@ public enum EventType
     DamageDealt,
     Healed,
     EntityDefeated,
-    PlayerDefeated
+    PlayerDefeated,
+    Moved,
+    IntentDeclared
 }

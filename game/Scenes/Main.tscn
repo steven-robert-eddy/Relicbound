@@ -1,11 +1,10 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
 
-; Bootstrap scene. Intentionally empty.
-;
-; This exists so the project opens and runs in Godot from the first commit,
-; which makes the scaffold verifiable. It is not the combat scene and it is
-; not a place to put game logic — see docs/CODING_STANDARDS.md.
-;
-; Milestone 1 replaces this with a combat sandbox scene.
+; Bootstrap scene. Instances the combat sandbox on ready — see Main.cs.
+; This stays the stable entry point; it will route to the Workshop instead
+; of straight to combat once Milestone 4 exists.
+
+[ext_resource type="Script" path="res://Scenes/Main.cs" id="1"]
 
 [node name="Main" type="Node2D"]
+script = ExtResource("1")
