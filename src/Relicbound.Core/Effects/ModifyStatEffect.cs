@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
 using Relicbound.Core.Stats;
+using Relicbound.Core.Tags;
 
 namespace Relicbound.Core.Effects;
 
 public sealed class ModifyStatEffect : Effect
 {
-    public ModifyStatEffect(StatType stat, ModifierLayer layer, int value, ModifierSource source)
+    public ModifyStatEffect(
+        StatType stat, ModifierLayer layer, int value, ModifierSource source, IReadOnlyCollection<Tag>? tags = null)
+        : base(tags)
     {
         Stat = stat;
         Layer = layer;

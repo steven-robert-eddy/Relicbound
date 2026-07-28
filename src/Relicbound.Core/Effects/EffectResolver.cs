@@ -10,11 +10,11 @@ namespace Relicbound.Core.Effects;
 /// by depth and a total step ceiling so a cycle terminates instead of
 /// hanging. See docs/TECHNICAL_ARCHITECTURE.md section 7.
 ///
-/// This covers two of the four guards described there — depth cap and step
-/// ceiling. The other two (per-round trigger budget, deterministic trigger
-/// ordering) attach once Milestone 2's trigger registry decides what gets
-/// enqueued in response to an event; there is nothing to budget or order
-/// until something external is triggering off events.
+/// This owns two of the four guards described there directly -- depth cap
+/// and step ceiling. The other two (per-round trigger budget, deterministic
+/// trigger ordering) are the responsibility of whatever <see cref="ITriggerSource"/>
+/// is supplied; Core has no notion of artifacts or equipment to order or
+/// budget by.
 /// </remarks>
 public sealed class EffectResolver
 {
@@ -23,11 +23,13 @@ public sealed class EffectResolver
 
     private readonly IEventBus _eventBus;
     private readonly Journal _journal;
+    private readonly ITriggerSource? _triggerSource;
 
-    public EffectResolver(IEventBus eventBus, Journal journal)
+    public EffectResolver(IEventBus eventBus, Journal journal, ITriggerSource? triggerSource = null)
     {
         _eventBus = eventBus;
         _journal = journal;
+        _triggerSource = triggerSource;
     }
 
     public void Resolve(Effect effect, EffectContext context)
@@ -53,6 +55,23 @@ public sealed class EffectResolver
             {
                 _journal.Record(gameEvent);
                 _eventBus.Publish(gameEvent);
+
+                if (_triggerSource is null || currentContext.Depth >= MaxTriggerDepth)
+                {
+                    continue;
+                }
+
+                foreach (var triggered in _triggerSource.Match(gameEvent))
+                {
+                    var triggeredContext = new EffectContext(
+                        currentContext.Source,
+                        triggered.Targets,
+                        currentContext.Random,
+                        currentContext.Depth + 1,
+                        EffectOrigin.Artifact);
+
+                    queue.Enqueue((triggered.Effect, triggeredContext));
+                }
             }
 
             foreach (var queued in result.Queued)

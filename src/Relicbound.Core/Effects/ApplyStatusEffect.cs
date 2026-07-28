@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
+using Relicbound.Core.Tags;
 
 namespace Relicbound.Core.Effects;
 
 public sealed class ApplyStatusEffect : Effect
 {
-    public ApplyStatusEffect(StatusType status, int stacks, int durationRounds)
+    public ApplyStatusEffect(StatusType status, int stacks, int durationRounds, IReadOnlyCollection<Tag>? tags = null)
+        : base(tags)
     {
         if (stacks <= 0)
         {

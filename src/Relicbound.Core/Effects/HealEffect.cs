@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
+using Relicbound.Core.Tags;
 
 namespace Relicbound.Core.Effects;
 
 public sealed class HealEffect : Effect
 {
-    public HealEffect(int amount)
+    public HealEffect(int amount, IReadOnlyCollection<Tag>? tags = null)
+        : base(tags)
     {
         if (amount < 0)
         {

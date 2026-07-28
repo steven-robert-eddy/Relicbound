@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
 using Relicbound.Core.Rules;
+using Relicbound.Core.Tags;
 
 namespace Relicbound.Core.Effects;
 
@@ -13,7 +14,8 @@ namespace Relicbound.Core.Effects;
 /// </remarks>
 public sealed class MoveEffect : Effect
 {
-    public MoveEffect(GridPoint destination)
+    public MoveEffect(GridPoint destination, IReadOnlyCollection<Tag>? tags = null)
+        : base(tags)
     {
         Destination = destination;
     }
