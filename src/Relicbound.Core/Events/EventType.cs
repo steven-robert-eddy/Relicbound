@@ -10,5 +10,9 @@ public enum EventType
     EntityDefeated,
     PlayerDefeated,
     Moved,
-    IntentDeclared
+    IntentDeclared,
+    StatusApplied,
+    StatusStacked,
+    StatusExpired,
+    StatModified
 }

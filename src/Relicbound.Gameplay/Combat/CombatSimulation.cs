@@ -143,6 +143,16 @@ public sealed class CombatSimulation
         foreach (var entity in _entities)
         {
             _turnResourceModel.Replenish(entity);
+
+            var statuses = entity.Get<Statuses>();
+            if (statuses is null) { continue; }
+
+            foreach (var expired in statuses.TickDurations())
+            {
+                var expiredEvent = new StatusExpiredEvent(entity, expired.Type);
+                Journal.Record(expiredEvent);
+                EventBus.Publish(expiredEvent);
+            }
         }
 
         foreach (var enemy in _enemies)

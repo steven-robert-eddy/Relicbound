@@ -128,6 +128,20 @@ public class CombatSimulationTests
     }
 
     [Fact]
+    public void EndPlayerTurn_TicksStatusDurations_AndExpiresAtZero()
+    {
+        var sim = CreateSimulation();
+        var player = sim.Entities[0];
+        player.Add(new Statuses());
+        player.Get<Statuses>()!.Add(StatusType.Burn, stacks: 1, durationRounds: 1);
+
+        sim.EndPlayerTurn();
+
+        Assert.False(player.Get<Statuses>()!.Has(StatusType.Burn));
+        Assert.Contains(sim.Journal.Entries, e => e.Type == EventType.StatusExpired);
+    }
+
+    [Fact]
     public void PlayerDefeated_EndsCombat_WithEnemiesAsWinner()
     {
         var sim = CreateSimulation(playerHealth: 5, enemyX: 4, enemyY: 3);
