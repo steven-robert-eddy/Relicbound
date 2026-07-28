@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
+using Relicbound.Content;
+using Relicbound.Content.Artifacts;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
 using Relicbound.Core.Rules;
+using Relicbound.Gameplay.Artifacts;
 using Relicbound.Gameplay.Combat;
 
 namespace Relicbound.Game.Scenes.Combat;
@@ -21,6 +25,7 @@ public partial class CombatSandboxView : Node2D
     private Node2D? _tokensLayer;
     private RichTextLabel? _combatLog;
     private Label? _apLabel;
+    private Label? _artifactsLabel;
     private Button? _endTurnButton;
 
     private readonly Dictionary<EntityId, TokenView> _tokens = new();
@@ -34,6 +39,7 @@ public partial class CombatSandboxView : Node2D
         _tokensLayer = GetNode<Node2D>("GridView/TokensLayer");
         _combatLog = GetNode<RichTextLabel>("UI/CombatLog");
         _apLabel = GetNode<Label>("UI/APLabel");
+        _artifactsLabel = GetNode<Label>("UI/ArtifactsLabel");
         _endTurnButton = GetNode<Button>("UI/EndTurnButton");
 
         _endTurnButton.Pressed += OnEndTurnPressed;
@@ -47,6 +53,19 @@ public partial class CombatSandboxView : Node2D
         player.Add(new PlayerControlled());
         player.Add(new Health(30));
         player.Add(new GridPosition(new GridPoint(1, 3)));
+
+        // A live demonstration of Milestone 2's actual proof: equipping
+        // Ember Heart changes combat with no code written for it
+        // specifically -- it's data, loaded the same way it would be
+        // in a real Workshop scene.
+        var artifacts = ArtifactContentLoader.LoadEmbedded(ContentAssembly.Reference);
+        var emberHeart = artifacts.FirstOrDefault(a => a.Id == "ember_heart");
+        if (emberHeart is not null)
+        {
+            var equipment = new Equipment();
+            equipment.Equip(0, emberHeart);
+            player.Add(equipment);
+        }
 
         var goblin = new Entity(new EntityId(2), "Goblin");
         goblin.Add(new Health(20));
@@ -160,6 +179,13 @@ public partial class CombatSandboxView : Node2D
 
         _apLabel!.Text = $"AP: {_simulation.PlayerActionPoints} / {_simulation.PlayerMaxActionPoints}";
 
+        var player = FindEntity(_playerId);
+        var equipment = player?.Get<Equipment>();
+        var equippedNames = equipment is null
+            ? Enumerable.Empty<string>()
+            : equipment.Slots.Where(a => a is not null).Select(a => a!.Name);
+        _artifactsLabel!.Text = "Artifact: " + (equippedNames.Any() ? string.Join(", ", equippedNames) : "(none)");
+
         var entries = _simulation.Journal.Entries;
         for (; _journalEntriesRendered < entries.Count; _journalEntriesRendered++)
         {
@@ -183,6 +209,14 @@ public partial class CombatSandboxView : Node2D
             PlayerDefeatedEvent => "You have fallen.",
             MovedEvent e => $"{e.Target.Name} moves to ({e.To.X}, {e.To.Y}).",
             IntentDeclaredEvent e => DescribeIntent(e),
+            StatusAppliedEvent e => $"{e.Target.Name} is afflicted with {e.Status} ({e.Stacks}).",
+            StatusStackedEvent e => $"{e.Target.Name}'s {e.Status} stacks to {e.TotalStacks}.",
+            StatusExpiredEvent e => $"{e.Target.Name}'s {e.Status} fades.",
+            StatModifiedEvent e => $"{e.Target.Name}'s {e.Stat} is modified.",
+            ArtifactTriggeredEvent e => $"{e.Holder.Name}'s {e.ArtifactId} triggers!",
+            ArtifactEquippedEvent e => $"{e.Holder.Name} equips {e.ArtifactId}.",
+            ArtifactUnequippedEvent e => $"{e.Holder.Name} unequips {e.ArtifactId}.",
+            EntityRevivedEvent e => $"{e.Target.Name} is revived, gaining {e.Amount} health!",
             _ => gameEvent.Type.ToString(),
         };
     }

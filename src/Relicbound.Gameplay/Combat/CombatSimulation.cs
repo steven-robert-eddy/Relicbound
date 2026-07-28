@@ -4,6 +4,7 @@ using Relicbound.Core.Effects;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
 using Relicbound.Core.Rules;
+using Relicbound.Gameplay.Artifacts;
 
 namespace Relicbound.Gameplay.Combat;
 
@@ -28,6 +29,7 @@ public sealed class CombatSimulation
     private readonly ITurnResourceModel _turnResourceModel;
     private readonly EffectResolver _resolver;
     private readonly IRandomSource _random;
+    private readonly TriggerRegistry _triggerRegistry;
 
     public CombatSimulation(CombatSetup setup)
     {
@@ -38,7 +40,8 @@ public sealed class CombatSimulation
         _turnResourceModel = new ActionPointModel();
         EventBus = new EventBus();
         Journal = new Journal();
-        _resolver = new EffectResolver(EventBus, Journal);
+        _triggerRegistry = new TriggerRegistry();
+        _resolver = new EffectResolver(EventBus, Journal, _triggerRegistry);
         _random = new SplitMix64RandomSource(setup.RandomSeed);
 
         foreach (var entity in _entities)
@@ -52,6 +55,18 @@ public sealed class CombatSimulation
             {
                 entity.Add(new Intent());
             }
+
+            var equipment = entity.Get<Equipment>();
+            if (equipment is null) { continue; }
+
+            for (var slot = 0; slot < Equipment.SlotCount; slot++)
+            {
+                var artifact = equipment.Get(slot);
+                if (artifact is not null)
+                {
+                    _triggerRegistry.Register(slot, artifact, entity);
+                }
+            }
         }
 
         StartRound();
@@ -59,6 +74,7 @@ public sealed class CombatSimulation
 
     public IEventBus EventBus { get; }
     public Journal Journal { get; }
+    public TriggerRegistry TriggerRegistry => _triggerRegistry;
     public Grid Grid => _grid;
     public IReadOnlyList<Entity> Entities => _entities;
     public int RoundNumber { get; private set; } = 1;
@@ -140,12 +156,27 @@ public sealed class CombatSimulation
 
     private void StartRound()
     {
+        _triggerRegistry.ResetRoundBudgets();
+
         foreach (var entity in _entities)
         {
             _turnResourceModel.Replenish(entity);
 
             var statuses = entity.Get<Statuses>();
             if (statuses is null) { continue; }
+
+            // Snapshot: resolving a tick effect can itself apply/expire
+            // statuses (e.g. a triggered artifact), which would otherwise
+            // mutate Active out from under this loop.
+            foreach (var active in statuses.Active.ToList())
+            {
+                var tickEffect = StatusTickEffects.Create(active.Type, active.Stacks);
+                if (tickEffect is null) { continue; }
+
+                _resolver.Resolve(
+                    tickEffect,
+                    new EffectContext(entity, new[] { entity }, _random, depth: 0, EffectOrigin.Status));
+            }
 
             foreach (var expired in statuses.TickDurations())
             {
@@ -154,6 +185,9 @@ public sealed class CombatSimulation
                 EventBus.Publish(expiredEvent);
             }
         }
+
+        CheckForCombatEnd();
+        if (IsCombatOver) { return; }
 
         foreach (var enemy in _enemies)
         {

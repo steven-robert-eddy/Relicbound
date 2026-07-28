@@ -14,5 +14,9 @@ public enum EventType
     StatusApplied,
     StatusStacked,
     StatusExpired,
-    StatModified
+    StatModified,
+    ArtifactEquipped,
+    ArtifactUnequipped,
+    ArtifactTriggered,
+    EntityRevived
 }

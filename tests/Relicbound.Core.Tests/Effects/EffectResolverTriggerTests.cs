@@ -61,29 +61,31 @@ public class EffectResolverTriggerTests
     {
         public int MatchCalls { get; private set; }
 
-        public IReadOnlyList<QueuedEffect> Match(IGameEvent gameEvent)
+        public IReadOnlyList<TriggerActivation> Match(IGameEvent gameEvent)
         {
             MatchCalls++;
 
             if (MatchCalls > 1 || gameEvent is not DamageDealtEvent damageDealt)
             {
-                return System.Array.Empty<QueuedEffect>();
+                return System.Array.Empty<TriggerActivation>();
             }
 
-            return new[] { new QueuedEffect(new DamageEffect(1), new[] { damageDealt.Target }) };
+            var queued = new QueuedEffect(new DamageEffect(1), new[] { damageDealt.Target });
+            return new[] { new TriggerActivation(new ArtifactTriggeredEvent(damageDealt.Source, "fake"), new[] { queued }) };
         }
     }
 
     private sealed class AlwaysMatchingTriggerSource : ITriggerSource
     {
-        public IReadOnlyList<QueuedEffect> Match(IGameEvent gameEvent)
+        public IReadOnlyList<TriggerActivation> Match(IGameEvent gameEvent)
         {
             if (gameEvent is not DamageDealtEvent damageDealt)
             {
-                return System.Array.Empty<QueuedEffect>();
+                return System.Array.Empty<TriggerActivation>();
             }
 
-            return new[] { new QueuedEffect(new DamageEffect(1), new[] { damageDealt.Target }) };
+            var queued = new QueuedEffect(new DamageEffect(1), new[] { damageDealt.Target });
+            return new[] { new TriggerActivation(new ArtifactTriggeredEvent(damageDealt.Source, "fake"), new[] { queued }) };
         }
     }
 }

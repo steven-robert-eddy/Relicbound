@@ -1,0 +1,9 @@
+{
+  "id": "ember_heart",
+  "name": "Ember Heart",
+  "tags": ["Fire", "Spirit"],
+  "trigger": "DAMAGE_DEALT",
+  "effects": [
+    { "type": "APPLY_STATUS", "status": "BURN", "stacks": 2, "durationRounds": 3 }
+  ]
+}

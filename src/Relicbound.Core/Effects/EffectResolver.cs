@@ -61,16 +61,22 @@ public sealed class EffectResolver
                     continue;
                 }
 
-                foreach (var triggered in _triggerSource.Match(gameEvent))
+                foreach (var activation in _triggerSource.Match(gameEvent))
                 {
-                    var triggeredContext = new EffectContext(
-                        currentContext.Source,
-                        triggered.Targets,
-                        currentContext.Random,
-                        currentContext.Depth + 1,
-                        EffectOrigin.Artifact);
+                    _journal.Record(activation.AnnouncementEvent);
+                    _eventBus.Publish(activation.AnnouncementEvent);
 
-                    queue.Enqueue((triggered.Effect, triggeredContext));
+                    foreach (var triggered in activation.Effects)
+                    {
+                        var triggeredContext = new EffectContext(
+                            currentContext.Source,
+                            triggered.Targets,
+                            currentContext.Random,
+                            currentContext.Depth + 1,
+                            EffectOrigin.Artifact);
+
+                        queue.Enqueue((triggered.Effect, triggeredContext));
+                    }
                 }
             }
 

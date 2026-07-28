@@ -27,6 +27,7 @@ public static class EffectDefinitionFactory
                 Require(definition.Layer, nameof(definition.Layer)),
                 Require(definition.Value, nameof(definition.Value)),
                 source),
+            EffectDefinitionType.Revive => new ReviveEffect(Require(definition.Value, nameof(definition.Value))),
             _ => throw new NotSupportedException($"Unknown effect definition type: {definition.Type}."),
         };
     }

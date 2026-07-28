@@ -35,6 +35,7 @@ Each entry in `effects` has a `type` plus the fields that type requires:
 | `HEAL` | `value` (positive int) |
 | `APPLY_STATUS` | `status`, `stacks` (positive int), `durationRounds` (positive int) |
 | `MODIFY_STAT` | `stat`, `layer`, `value` |
+| `REVIVE` | `value` (1-100, percent of max health to revive at) |
 
 ## Examples
 
@@ -67,11 +68,11 @@ the killing blow:
   "holderRole": "Recipient",
   "effectTarget": "Self",
   "effects": [
-    { "type": "HEAL", "value": 1 }
+    { "type": "REVIVE", "value": 50 }
   ]
 }
 ```
 
-> Phoenix Feather's actual revive behavior needs a dedicated `ReviveEffect`
-> (Milestone 2 issues 2.9-2.10, not yet built). The `HEAL` effect above is
-> illustrative of the schema only, not the shipped artifact.
+> The revive percent (50) and Ember Heart's Burn stacks/duration (2/3) are
+> prototype defaults, not balance decisions -- tune freely once there's a
+> reason to.

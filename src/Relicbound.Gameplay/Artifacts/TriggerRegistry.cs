@@ -37,10 +37,10 @@ public sealed class TriggerRegistry : ITriggerSource
         _triggersUsedThisRound.Clear();
     }
 
-    public IReadOnlyList<QueuedEffect> Match(IGameEvent gameEvent)
+    public IReadOnlyList<TriggerActivation> Match(IGameEvent gameEvent)
     {
         var (actor, recipient) = ExtractRoles(gameEvent);
-        var result = new List<QueuedEffect>();
+        var result = new List<TriggerActivation>();
 
         var matching = _registrations
             .Where(r => r.Artifact.Trigger == gameEvent.Type)
@@ -72,11 +72,12 @@ public sealed class TriggerRegistry : ITriggerSource
             };
 
             var source = new ModifierSource(registration.Artifact.Id);
-            foreach (var effectDefinition in registration.Artifact.Effects)
-            {
-                var effect = EffectDefinitionFactory.Create(effectDefinition, source);
-                result.Add(new QueuedEffect(effect, new[] { target }));
-            }
+            var queuedEffects = registration.Artifact.Effects
+                .Select(effectDefinition => new QueuedEffect(EffectDefinitionFactory.Create(effectDefinition, source), new[] { target }))
+                .ToList();
+
+            result.Add(new TriggerActivation(
+                new ArtifactTriggeredEvent(registration.Holder, registration.Artifact.Id), queuedEffects));
         }
 
         return result;

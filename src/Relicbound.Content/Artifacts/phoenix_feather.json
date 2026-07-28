@@ -1,0 +1,12 @@
+{
+  "id": "phoenix_feather",
+  "name": "Phoenix Feather",
+  "tags": ["Fire", "Spirit"],
+  "trigger": "PLAYER_DEFEATED",
+  "holderRole": "Recipient",
+  "effectTarget": "Self",
+  "maxTriggersPerRound": 1,
+  "effects": [
+    { "type": "REVIVE", "value": 50 }
+  ]
+}

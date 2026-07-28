@@ -106,6 +106,15 @@ public class ArtifactContentLoaderTests
     }
 
     [Fact]
+    public void LoadEmbedded_LoadsEmberHeartAndPhoenixFeather_FromRealContentFiles()
+    {
+        var definitions = ArtifactContentLoader.LoadEmbedded(Relicbound.Content.ContentAssembly.Reference);
+
+        Assert.Contains(definitions, d => d.Id == "ember_heart");
+        Assert.Contains(definitions, d => d.Id == "phoenix_feather");
+    }
+
+    [Fact]
     public void LoadAll_WithUnknownTag_ReportsIt()
     {
         const string json = """

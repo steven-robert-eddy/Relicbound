@@ -13,5 +13,5 @@ namespace Relicbound.Core.Effects;
 /// </remarks>
 public interface ITriggerSource
 {
-    IReadOnlyList<QueuedEffect> Match(IGameEvent gameEvent);
+    IReadOnlyList<TriggerActivation> Match(IGameEvent gameEvent);
 }

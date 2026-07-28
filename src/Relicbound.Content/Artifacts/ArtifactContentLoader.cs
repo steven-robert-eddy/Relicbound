@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
@@ -20,6 +22,26 @@ namespace Relicbound.Content.Artifacts;
 public static class ArtifactContentLoader
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
+
+    /// <remarks>
+    /// Reads every embedded Artifacts/*.json resource from the given
+    /// assembly -- the same content, loaded the same way, in a test, on CI,
+    /// and in the built game (docs/TECHNICAL_ARCHITECTURE.md section 10).
+    /// </remarks>
+    public static IReadOnlyList<ArtifactDefinition> LoadEmbedded(Assembly assembly)
+    {
+        var resourceNames = assembly.GetManifestResourceNames()
+            .Where(name => name.Contains(".Artifacts.", StringComparison.Ordinal) && name.EndsWith(".json", StringComparison.Ordinal));
+
+        var jsonDocuments = resourceNames.Select(name =>
+        {
+            using var stream = assembly.GetManifestResourceStream(name)!;
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        });
+
+        return LoadAll(jsonDocuments.ToList());
+    }
 
     public static IReadOnlyList<ArtifactDefinition> LoadAll(IEnumerable<string> jsonDocuments)
     {
@@ -169,6 +191,15 @@ public static class ArtifactContentLoader
                 if (effectJson.Value is not (> 0))
                 {
                     errors.Add($"a {type} effect requires a positive 'value'.");
+                    return null;
+                }
+
+                return new EffectDefinition(type, Value: effectJson.Value);
+
+            case EffectDefinitionType.Revive:
+                if (effectJson.Value is not (> 0 and <= 100))
+                {
+                    errors.Add("a REVIVE effect requires a 'value' between 1 and 100 (percent of max health).");
                     return null;
                 }
 

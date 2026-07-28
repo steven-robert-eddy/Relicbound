@@ -71,4 +71,13 @@ public class EffectDefinitionFactoryTests
 
         Assert.Throws<System.InvalidOperationException>(() => EffectDefinitionFactory.Create(definition, Source));
     }
+
+    [Fact]
+    public void Create_Revive_ReturnsReviveEffectWithGivenPercent()
+    {
+        var effect = EffectDefinitionFactory.Create(new EffectDefinition(EffectDefinitionType.Revive, Value: 50), Source);
+
+        var revive = Assert.IsType<ReviveEffect>(effect);
+        Assert.Equal(50, revive.HealthPercent);
+    }
 }

@@ -36,7 +36,8 @@ public class TriggerRegistryTests
 
         var matches = registry.Match(new DamageDealtEvent(holder, recipient, 10));
 
-        var queued = Assert.Single(matches);
+        var activation = Assert.Single(matches);
+        var queued = Assert.Single(activation.Effects);
         Assert.Same(recipient, Assert.Single(queued.Targets));
     }
 
@@ -64,7 +65,8 @@ public class TriggerRegistryTests
 
         var matches = registry.Match(new PlayerDefeatedEvent(holder));
 
-        var queued = Assert.Single(matches);
+        var activation = Assert.Single(matches);
+        var queued = Assert.Single(activation.Effects);
         Assert.Same(holder, Assert.Single(queued.Targets));
     }
 
@@ -90,8 +92,8 @@ public class TriggerRegistryTests
         var matches = registry.Match(new DamageDealtEvent(holder, recipient, 10));
 
         Assert.Equal(2, matches.Count);
-        Assert.IsType<Relicbound.Core.Effects.ApplyStatusEffect>(matches[0].Effect);
-        Assert.IsType<Relicbound.Core.Effects.HealEffect>(matches[1].Effect);
+        Assert.IsType<Relicbound.Core.Effects.ApplyStatusEffect>(Assert.Single(matches[0].Effects).Effect);
+        Assert.IsType<Relicbound.Core.Effects.HealEffect>(Assert.Single(matches[1].Effects).Effect);
     }
 
     [Fact]
@@ -112,6 +114,22 @@ public class TriggerRegistryTests
         var afterReset = registry.Match(new DamageDealtEvent(holder, recipient, 10));
 
         Assert.Single(afterReset);
+    }
+
+    [Fact]
+    public void Match_ReturnsAnArtifactTriggeredAnnouncement_IdentifyingTheArtifact()
+    {
+        var holder = new Entity(new EntityId(1), "Player");
+        var recipient = new Entity(new EntityId(2), "Goblin");
+        var registry = new TriggerRegistry();
+        registry.Register(slotIndex: 0, EmberHeartLike(), holder);
+
+        var matches = registry.Match(new DamageDealtEvent(holder, recipient, 10));
+
+        var activation = Assert.Single(matches);
+        var announcement = Assert.IsType<ArtifactTriggeredEvent>(activation.AnnouncementEvent);
+        Assert.Same(holder, announcement.Holder);
+        Assert.Equal("ember_heart", announcement.ArtifactId);
     }
 
     [Fact]

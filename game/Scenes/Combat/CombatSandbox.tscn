@@ -27,9 +27,16 @@ offset_right = 900.0
 offset_bottom = 440.0
 text = "AP: 3 / 3"
 
+[node name="ArtifactsLabel" type="Label" parent="UI"]
+offset_left = 660.0
+offset_top = 440.0
+offset_right = 1220.0
+offset_bottom = 470.0
+text = "Artifact: (none)"
+
 [node name="EndTurnButton" type="Button" parent="UI"]
 offset_left = 660.0
-offset_top = 450.0
+offset_top = 480.0
 offset_right = 800.0
-offset_bottom = 490.0
+offset_bottom = 520.0
 text = "End Turn"

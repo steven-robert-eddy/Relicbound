@@ -8,5 +8,6 @@ public enum EffectDefinitionType
     Damage,
     Heal,
     ApplyStatus,
-    ModifyStat
+    ModifyStat,
+    Revive
 }
