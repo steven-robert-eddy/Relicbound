@@ -7,8 +7,9 @@ You descend into ruins, recover artifacts, and find out what they do when you pu
 them next to each other. Most of the time you don't come back with the artifact.
 You always come back with what you learned.
 
-> **Status: foundation.** Documentation and project scaffolding only — no
-> gameplay code yet. Milestone 1 is the next step. See
+> **Status: Milestone 1 in progress.** Entity, Event, and Effect systems are
+> implemented and tested in `Relicbound.Core`. Grid movement, the AP turn
+> model, the combat simulation loop, and the Godot view are next. See
 > [`docs/PROTOTYPE_ROADMAP.md`](docs/PROTOTYPE_ROADMAP.md).
 
 ---
