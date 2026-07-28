@@ -27,8 +27,12 @@ public partial class GridView : Node2D
 
     public GridPoint PixelToTile(Vector2 localPosition)
     {
-        var x = (int)(localPosition.X / TileSize);
-        var y = (int)(localPosition.Y / TileSize);
+        // A plain (int) cast truncates toward zero, not floor - identical to
+        // floor for positive values but wrong for the margin just outside
+        // the grid's top-left corner, where a click produces a small
+        // negative coordinate that should map to an out-of-bounds tile.
+        var x = (int)System.MathF.Floor(localPosition.X / TileSize);
+        var y = (int)System.MathF.Floor(localPosition.Y / TileSize);
         return new GridPoint(x, y);
     }
 
