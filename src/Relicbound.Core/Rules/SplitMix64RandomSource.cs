@@ -31,6 +31,8 @@ public sealed class SplitMix64RandomSource : IRandomSource
         return minInclusive + (int)value;
     }
 
+    public ulong NextSeed() => NextUInt64();
+
     private ulong NextUInt64()
     {
         _state += 0x9E3779B97F4A7C15UL;
