@@ -1,0 +1,8 @@
+{
+  "id": "goblin_patrol",
+  "name": "Goblin Patrol",
+  "difficultyTier": "STANDARD",
+  "enemies": [
+    { "id": "goblin", "name": "Goblin", "health": 20 }
+  ]
+}

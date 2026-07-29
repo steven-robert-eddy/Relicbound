@@ -1,0 +1,8 @@
+{
+  "id": "goblin_chieftain",
+  "name": "Goblin Chieftain",
+  "difficultyTier": "ELITE",
+  "enemies": [
+    { "id": "goblin_chieftain", "name": "Goblin Chieftain", "health": 45 }
+  ]
+}

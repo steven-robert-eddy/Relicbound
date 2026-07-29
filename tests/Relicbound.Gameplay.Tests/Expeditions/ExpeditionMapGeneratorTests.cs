@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Relicbound.Gameplay.Encounters;
 using Relicbound.Gameplay.Expeditions;
 using Xunit;
 
@@ -7,6 +8,14 @@ namespace Relicbound.Gameplay.Tests.Expeditions;
 
 public class ExpeditionMapGeneratorTests
 {
+    private static readonly IReadOnlyList<EncounterDefinition> EncounterPool = new[]
+    {
+        new EncounterDefinition("standard_a", "Standard A", DifficultyTier.Standard, new[] { new EncounterEnemy("e", "E", 10) }),
+        new EncounterDefinition("standard_b", "Standard B", DifficultyTier.Standard, new[] { new EncounterEnemy("e", "E", 10) }),
+        new EncounterDefinition("elite_a", "Elite A", DifficultyTier.Elite, new[] { new EncounterEnemy("e", "E", 30) }),
+        new EncounterDefinition("boss_a", "Boss A", DifficultyTier.Boss, new[] { new EncounterEnemy("e", "E", 60) }),
+    };
+
     [Fact]
     public void Generate_WithSameSeed_ProducesAnIdenticalMap()
     {
@@ -126,5 +135,71 @@ public class ExpeditionMapGeneratorTests
         }
 
         Assert.Equal(map.Nodes.Count, visited.Count);
+    }
+
+    [Fact]
+    public void Generate_WithoutEncounters_LeavesEveryNodesEncounterIdNull()
+    {
+        var map = ExpeditionMapGenerator.Generate(42);
+
+        Assert.All(map.Nodes, n => Assert.Null(n.EncounterId));
+    }
+
+    [Fact]
+    public void Generate_WithEncounters_AssignsCombatNodesAStandardTierEncounter()
+    {
+        var map = ExpeditionMapGenerator.Generate(42, encounters: EncounterPool);
+
+        var combatNodes = map.Nodes.Where(n => n.Type == NodeType.Combat).ToList();
+        Assert.NotEmpty(combatNodes);
+        Assert.All(combatNodes, n => Assert.Contains(n.EncounterId, new[] { "standard_a", "standard_b" }));
+    }
+
+    [Fact]
+    public void Generate_TheBossNode_GetsTheBossTierEncounter()
+    {
+        var map = ExpeditionMapGenerator.Generate(42, encounters: EncounterPool);
+
+        Assert.Equal("boss_a", map.Get(map.BossNodeId).EncounterId);
+    }
+
+    [Fact]
+    public void Generate_EliteNodes_HaveAnEliteEncounterAndGuaranteeAnArtifactReward()
+    {
+        var map = ExpeditionMapGenerator.Generate(42, encounters: EncounterPool);
+
+        var eliteNodes = map.Nodes.Where(n => n.Type == NodeType.Elite).ToList();
+        Assert.NotEmpty(eliteNodes);
+        Assert.All(eliteNodes, n =>
+        {
+            Assert.Equal("elite_a", n.EncounterId);
+            Assert.True(n.GuaranteesArtifactReward);
+        });
+    }
+
+    [Fact]
+    public void Generate_NonCombatNonEliteNonBossNodes_HaveNoEncounterAndNoGuaranteedReward()
+    {
+        var map = ExpeditionMapGenerator.Generate(42, encounters: EncounterPool);
+
+        var otherNodes = map.Nodes.Where(n =>
+            n.Type is NodeType.Treasure or NodeType.Event or NodeType.Merchant or NodeType.Start);
+
+        Assert.All(otherNodes, n =>
+        {
+            Assert.Null(n.EncounterId);
+            Assert.False(n.GuaranteesArtifactReward);
+        });
+    }
+
+    [Fact]
+    public void Generate_WhenThePoolHasNoMatchingTier_LeavesThatNodesEncounterIdNull()
+    {
+        var eliteOnly = new[] { EncounterPool.Single(e => e.Id == "elite_a") };
+
+        var map = ExpeditionMapGenerator.Generate(42, encounters: eliteOnly);
+
+        var combatNodes = map.Nodes.Where(n => n.Type == NodeType.Combat);
+        Assert.All(combatNodes, n => Assert.Null(n.EncounterId));
     }
 }

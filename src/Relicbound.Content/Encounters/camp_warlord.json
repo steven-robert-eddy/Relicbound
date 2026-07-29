@@ -1,0 +1,8 @@
+{
+  "id": "camp_warlord",
+  "name": "Camp Warlord",
+  "difficultyTier": "BOSS",
+  "enemies": [
+    { "id": "camp_warlord", "name": "Camp Warlord", "health": 80 }
+  ]
+}

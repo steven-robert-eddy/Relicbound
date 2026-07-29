@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Relicbound.Core.Rules;
+using Relicbound.Gameplay.Encounters;
 
 namespace Relicbound.Gameplay.Expeditions;
 
@@ -11,13 +12,16 @@ namespace Relicbound.Gameplay.Expeditions;
 /// holding a handful of node-type choices, and one Boss node every path on
 /// the final floor leads into.
 ///
-/// Deterministic: the same seed always produces the same map (structure and
-/// node types alike), per docs/TECHNICAL_ARCHITECTURE.md section 2 --
-/// callers pass the map stream's own seed, already split off the run seed
-/// via IRandomSource.NextSeed(), not the run seed itself.
+/// Deterministic: the same seed always produces the same map (structure,
+/// node types, and encounter picks alike), per
+/// docs/TECHNICAL_ARCHITECTURE.md section 2 -- callers pass the map
+/// stream's own seed, already split off the run seed via
+/// IRandomSource.NextSeed(), not the run seed itself.
 /// </remarks>
 public static class ExpeditionMapGenerator
 {
+    private sealed record NodeMeta(NodeType Type, int Floor, string? EncounterId, bool GuaranteesArtifactReward);
+
     // docs/GAME_DESIGN.md section 8: "Combat -- the default." Weighted so
     // roughly half of any floor's nodes are Combat, with the other four
     // choice types splitting the rest evenly.
@@ -30,9 +34,13 @@ public static class ExpeditionMapGenerator
         NodeType.Merchant,
     };
 
-    public static ExpeditionMap Generate(ulong seed, ExpeditionMapConfig? config = null)
+    public static ExpeditionMap Generate(
+        ulong seed,
+        ExpeditionMapConfig? config = null,
+        IReadOnlyList<EncounterDefinition>? encounters = null)
     {
         config ??= new ExpeditionMapConfig();
+        var encounterPool = encounters ?? Array.Empty<EncounterDefinition>();
 
         if (config.FloorCount < 1)
         {
@@ -46,15 +54,13 @@ public static class ExpeditionMapGenerator
 
         var random = new SplitMix64RandomSource(seed);
         var nextId = 0;
-        var floorTypes = new Dictionary<ExpeditionNodeId, NodeType>();
-        var floorOf = new Dictionary<ExpeditionNodeId, int>();
+        var meta = new Dictionary<ExpeditionNodeId, NodeMeta>();
         var edges = new Dictionary<ExpeditionNodeId, List<ExpeditionNodeId>>();
 
-        ExpeditionNodeId NewNode(NodeType type, int floor)
+        ExpeditionNodeId NewNode(NodeType type, int floor, string? encounterId = null, bool guaranteesArtifactReward = false)
         {
             var id = new ExpeditionNodeId(nextId++);
-            floorTypes[id] = type;
-            floorOf[id] = floor;
+            meta[id] = new NodeMeta(type, floor, encounterId, guaranteesArtifactReward);
             edges[id] = new List<ExpeditionNodeId>();
             return id;
         }
@@ -70,22 +76,48 @@ public static class ExpeditionMapGenerator
             for (var i = 0; i < nodeCount; i++)
             {
                 var type = WeightedChoicePool[random.NextInt(0, WeightedChoicePool.Length)];
-                currentFloor.Add(NewNode(type, floor));
+
+                var encounterId = type switch
+                {
+                    NodeType.Combat => PickEncounterId(encounterPool, DifficultyTier.Standard, random),
+                    NodeType.Elite => PickEncounterId(encounterPool, DifficultyTier.Elite, random),
+                    _ => null,
+                };
+
+                currentFloor.Add(NewNode(type, floor, encounterId, guaranteesArtifactReward: type == NodeType.Elite));
             }
 
             ConnectFloors(previousFloor, currentFloor, edges, random);
             previousFloor = currentFloor;
         }
 
-        var bossId = NewNode(NodeType.Boss, floor: config.FloorCount + 1);
+        var bossEncounterId = PickEncounterId(encounterPool, DifficultyTier.Boss, random);
+        var bossId = NewNode(NodeType.Boss, floor: config.FloorCount + 1, bossEncounterId);
         ConnectFloors(previousFloor, new List<ExpeditionNodeId> { bossId }, edges, random);
 
         var nodes = Enumerable.Range(0, nextId)
             .Select(i => new ExpeditionNodeId(i))
-            .Select(id => new ExpeditionNode(id, floorTypes[id], floorOf[id], edges[id]))
+            .Select(id =>
+            {
+                var m = meta[id];
+                return new ExpeditionNode(id, m.Type, m.Floor, edges[id], m.EncounterId, m.GuaranteesArtifactReward);
+            })
             .ToList();
 
         return new ExpeditionMap(nodes, startId, bossId);
+    }
+
+    /// <remarks>
+    /// Returns null rather than throwing when the pool has nothing at
+    /// <paramref name="tier"/> -- generation stays usable with a partial or
+    /// empty encounter pool (e.g. shape-only tests), and a caller that cares
+    /// whether every Combat/Elite/Boss node actually got an encounter can
+    /// check for null itself.
+    /// </remarks>
+    private static string? PickEncounterId(IReadOnlyList<EncounterDefinition> encounters, DifficultyTier tier, IRandomSource random)
+    {
+        var matching = encounters.Where(e => e.DifficultyTier == tier).ToList();
+        return matching.Count == 0 ? null : matching[random.NextInt(0, matching.Count)].Id;
     }
 
     /// <remarks>

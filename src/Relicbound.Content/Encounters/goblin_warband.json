@@ -1,0 +1,9 @@
+{
+  "id": "goblin_warband",
+  "name": "Goblin Warband",
+  "difficultyTier": "STANDARD",
+  "enemies": [
+    { "id": "goblin_1", "name": "Goblin", "health": 15 },
+    { "id": "goblin_2", "name": "Goblin", "health": 15 }
+  ]
+}
