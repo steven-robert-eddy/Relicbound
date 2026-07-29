@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Relicbound.Core.Effects;
+using Relicbound.Core.Stats;
 using Relicbound.Core.Tags;
 using Relicbound.Gameplay.Artifacts;
 using Relicbound.Gameplay.Runes;
