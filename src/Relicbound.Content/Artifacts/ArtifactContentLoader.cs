@@ -143,6 +143,19 @@ public static class ArtifactContentLoader
             errors.Add("'maxTriggersPerRound' must be positive.");
         }
 
+        Tag? requiredTag = null;
+        if (dto.RequiredTag is not null)
+        {
+            if (ContentEnumParsing.TryParse<Tag>(dto.RequiredTag, out var parsedRequiredTag))
+            {
+                requiredTag = parsedRequiredTag;
+            }
+            else
+            {
+                errors.Add($"'requiredTag' value '{dto.RequiredTag}' is not a known tag.");
+            }
+        }
+
         var effects = new List<EffectDefinition>();
         if (dto.Effects is null || dto.Effects.Count == 0)
         {
@@ -173,7 +186,8 @@ public static class ArtifactContentLoader
             effects,
             holderRole,
             effectTarget,
-            maxTriggersPerRound);
+            maxTriggersPerRound,
+            requiredTag);
     }
 
     private static EffectDefinition? TryBuildEffect(EffectJson effectJson, List<string> errors)
@@ -188,6 +202,7 @@ public static class ArtifactContentLoader
         {
             case EffectDefinitionType.Damage:
             case EffectDefinitionType.Heal:
+            case EffectDefinitionType.Shield:
                 if (effectJson.Value is not (> 0))
                 {
                     errors.Add($"a {type} effect requires a positive 'value'.");

@@ -17,6 +17,7 @@ internal sealed class ArtifactJson
     public string? HolderRole { get; set; }
     public string? EffectTarget { get; set; }
     public int? MaxTriggersPerRound { get; set; }
+    public string? RequiredTag { get; set; }
     public List<EffectJson>? Effects { get; set; }
 }
 

@@ -1,0 +1,12 @@
+{
+  "id": "shield",
+  "name": "Shield",
+  "tags": ["Defense"],
+  "cost": 1,
+  "range": 0,
+  "sockets": 0,
+  "targeting": "SINGLE",
+  "effects": [
+    { "type": "SHIELD", "value": 8 }
+  ]
+}

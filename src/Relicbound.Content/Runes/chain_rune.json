@@ -1,0 +1,10 @@
+{
+  "id": "rune_chain",
+  "name": "Chain Rune",
+  "namePrefix": "Chain",
+  "addsTags": [],
+  "costDelta": 1,
+  "effects": [],
+  "chainAdditionalTargets": 2,
+  "chainFalloffPercent": 50
+}

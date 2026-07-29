@@ -61,7 +61,7 @@ public sealed class EffectResolver
                     continue;
                 }
 
-                foreach (var activation in _triggerSource.Match(gameEvent))
+                foreach (var activation in _triggerSource.Match(gameEvent, currentEffect.Tags))
                 {
                     _journal.Record(activation.AnnouncementEvent);
                     _eventBus.Publish(activation.AnnouncementEvent);

@@ -61,7 +61,7 @@ public class EffectResolverTriggerTests
     {
         public int MatchCalls { get; private set; }
 
-        public IReadOnlyList<TriggerActivation> Match(IGameEvent gameEvent)
+        public IReadOnlyList<TriggerActivation> Match(IGameEvent gameEvent, IReadOnlyCollection<Relicbound.Core.Tags.Tag>? effectTags = null)
         {
             MatchCalls++;
 
@@ -77,7 +77,7 @@ public class EffectResolverTriggerTests
 
     private sealed class AlwaysMatchingTriggerSource : ITriggerSource
     {
-        public IReadOnlyList<TriggerActivation> Match(IGameEvent gameEvent)
+        public IReadOnlyList<TriggerActivation> Match(IGameEvent gameEvent, IReadOnlyCollection<Relicbound.Core.Tags.Tag>? effectTags = null)
         {
             if (gameEvent is not DamageDealtEvent damageDealt)
             {

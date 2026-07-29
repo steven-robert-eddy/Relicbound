@@ -1,0 +1,12 @@
+{
+  "id": "bolt",
+  "name": "Bolt",
+  "tags": ["Void"],
+  "cost": 1,
+  "range": 4,
+  "sockets": 2,
+  "targeting": "SINGLE",
+  "effects": [
+    { "type": "DAMAGE", "value": 6 }
+  ]
+}

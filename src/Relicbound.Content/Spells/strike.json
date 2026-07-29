@@ -1,0 +1,12 @@
+{
+  "id": "strike",
+  "name": "Strike",
+  "tags": [],
+  "cost": 1,
+  "range": 1,
+  "sockets": 0,
+  "targeting": "SINGLE",
+  "effects": [
+    { "type": "DAMAGE", "value": 5 }
+  ]
+}

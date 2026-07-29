@@ -9,5 +9,6 @@ public enum EffectDefinitionType
     Heal,
     ApplyStatus,
     ModifyStat,
-    Revive
+    Revive,
+    Shield
 }

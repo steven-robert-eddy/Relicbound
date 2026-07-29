@@ -18,5 +18,6 @@ public enum EventType
     ArtifactEquipped,
     ArtifactUnequipped,
     ArtifactTriggered,
-    EntityRevived
+    EntityRevived,
+    ShieldGained
 }

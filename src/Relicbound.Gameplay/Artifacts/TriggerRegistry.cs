@@ -5,6 +5,7 @@ using Relicbound.Core.Effects;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
 using Relicbound.Core.Stats;
+using Relicbound.Core.Tags;
 
 namespace Relicbound.Gameplay.Artifacts;
 
@@ -16,6 +17,12 @@ namespace Relicbound.Gameplay.Artifacts;
 /// from the Equipment component on purpose -- Equipment (Milestone 2 issue
 /// 2.6) will call Register/Unregister as artifacts are equipped, but nothing
 /// here needs Equipment to exist to be correct and testable.
+///
+/// Also checks ArtifactDefinition.RequiredTag against the firing effect's own
+/// tags, when set -- this is what makes a Flame-Runed spell's Fire tag
+/// (docs/GAME_DESIGN.md section 7) actually gate a Fire-requiring artifact,
+/// not just carry the label. Optional and additive: an artifact with no
+/// RequiredTag (Ember Heart, Phoenix Feather) is completely unaffected.
 /// </remarks>
 public sealed class TriggerRegistry : ITriggerSource
 {
@@ -37,9 +44,10 @@ public sealed class TriggerRegistry : ITriggerSource
         _triggersUsedThisRound.Clear();
     }
 
-    public IReadOnlyList<TriggerActivation> Match(IGameEvent gameEvent)
+    public IReadOnlyList<TriggerActivation> Match(IGameEvent gameEvent, IReadOnlyCollection<Tag>? effectTags = null)
     {
         var (actor, recipient) = ExtractRoles(gameEvent);
+        var tags = effectTags ?? Array.Empty<Tag>();
         var result = new List<TriggerActivation>();
 
         var matching = _registrations
@@ -57,6 +65,11 @@ public sealed class TriggerRegistry : ITriggerSource
             };
 
             if (!holderMatches) { continue; }
+
+            if (registration.Artifact.RequiredTag is { } required && !tags.Contains(required))
+            {
+                continue;
+            }
 
             var budgetKey = (registration.Holder.Id, registration.Artifact.Id);
             _triggersUsedThisRound.TryGetValue(budgetKey, out var used);

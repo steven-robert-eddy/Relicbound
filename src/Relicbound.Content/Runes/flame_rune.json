@@ -1,0 +1,10 @@
+{
+  "id": "rune_flame",
+  "name": "Flame Rune",
+  "namePrefix": "Inferno",
+  "addsTags": ["Fire"],
+  "costDelta": 0,
+  "effects": [
+    { "type": "APPLY_STATUS", "status": "BURN", "stacks": 2, "durationRounds": 3 }
+  ]
+}

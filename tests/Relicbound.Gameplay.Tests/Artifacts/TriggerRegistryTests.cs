@@ -146,4 +146,64 @@ public class TriggerRegistryTests
 
         Assert.Empty(matches);
     }
+
+    [Fact]
+    public void Match_WithRequiredTag_DoesNotFire_WhenEffectTagsDoNotIncludeIt()
+    {
+        var holder = new Entity(new EntityId(1), "Player");
+        var recipient = new Entity(new EntityId(2), "Goblin");
+        var registry = new TriggerRegistry();
+
+        var fireGated = new ArtifactDefinition(
+            Id: "fire_gated",
+            Name: "Fire Gated",
+            Tags: System.Array.Empty<Tag>(),
+            Trigger: EventType.DamageDealt,
+            Effects: new[] { new EffectDefinition(EffectDefinitionType.Heal, Value: 1) },
+            RequiredTag: Tag.Fire);
+        registry.Register(slotIndex: 0, fireGated, holder);
+
+        // Plain, untagged damage -- e.g. a non-Fire Strike -- should not
+        // set off an artifact that specifically requires Fire.
+        var matches = registry.Match(new DamageDealtEvent(holder, recipient, 10), System.Array.Empty<Tag>());
+
+        Assert.Empty(matches);
+    }
+
+    [Fact]
+    public void Match_WithRequiredTag_Fires_WhenEffectTagsIncludeIt()
+    {
+        var holder = new Entity(new EntityId(1), "Player");
+        var recipient = new Entity(new EntityId(2), "Goblin");
+        var registry = new TriggerRegistry();
+
+        var fireGated = new ArtifactDefinition(
+            Id: "fire_gated",
+            Name: "Fire Gated",
+            Tags: System.Array.Empty<Tag>(),
+            Trigger: EventType.DamageDealt,
+            Effects: new[] { new EffectDefinition(EffectDefinitionType.Heal, Value: 1) },
+            RequiredTag: Tag.Fire);
+        registry.Register(slotIndex: 0, fireGated, holder);
+
+        // Fire-tagged damage -- e.g. a Flame-Runed spell -- does set it off.
+        var matches = registry.Match(new DamageDealtEvent(holder, recipient, 10), new[] { Tag.Fire });
+
+        Assert.Single(matches);
+    }
+
+    [Fact]
+    public void Match_WithoutRequiredTag_FiresRegardlessOfEffectTags()
+    {
+        var holder = new Entity(new EntityId(1), "Player");
+        var recipient = new Entity(new EntityId(2), "Goblin");
+        var registry = new TriggerRegistry();
+        registry.Register(slotIndex: 0, EmberHeartLike(), holder);
+
+        // Ember Heart has no RequiredTag, so untagged damage still sets it
+        // off -- existing behavior, unaffected by adding the gate elsewhere.
+        var matches = registry.Match(new DamageDealtEvent(holder, recipient, 10), System.Array.Empty<Tag>());
+
+        Assert.Single(matches);
+    }
 }
