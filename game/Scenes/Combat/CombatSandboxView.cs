@@ -4,11 +4,14 @@ using System.Linq;
 using Godot;
 using Relicbound.Content;
 using Relicbound.Content.Artifacts;
+using Relicbound.Content.Spells;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
 using Relicbound.Core.Rules;
 using Relicbound.Gameplay.Artifacts;
 using Relicbound.Gameplay.Combat;
+using Relicbound.Gameplay.Runes;
+using Relicbound.Gameplay.Spells;
 
 namespace Relicbound.Game.Scenes.Combat;
 
@@ -74,11 +77,18 @@ public partial class CombatSandboxView : Node2D
         _playerId = player.Id;
         _enemyId = goblin.Id;
 
+        // The basic attack both sides use is real spell content -- Strike,
+        // composed with no runes socketed -- not a hardcoded damage number.
+        var spells = SpellContentLoader.LoadEmbedded(ContentAssembly.Reference);
+        var strike = spells.First(s => s.Id == "strike");
+        var basicAttack = SpellComposer.Compose(strike, Array.Empty<RuneDefinition>());
+
         var setup = new CombatSetup(
             _gridView!.Columns,
             _gridView.Rows,
             new Entity[] { player, goblin },
-            (ulong)DateTimeOffset.UtcNow.Ticks);
+            (ulong)DateTimeOffset.UtcNow.Ticks,
+            basicAttack);
 
         _simulation = new CombatSimulation(setup);
         _journalEntriesRendered = 0;

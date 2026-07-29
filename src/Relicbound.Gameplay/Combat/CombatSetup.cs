@@ -1,6 +1,19 @@
 using System.Collections.Generic;
 using Relicbound.Core.Entities;
+using Relicbound.Gameplay.Spells;
 
 namespace Relicbound.Gameplay.Combat;
 
-public sealed record CombatSetup(int GridWidth, int GridHeight, IReadOnlyList<Entity> Entities, ulong RandomSeed);
+/// <remarks>
+/// BasicAttack is the composed spell every entity's plain Strike action
+/// resolves -- see CombatSimulation.RequestAttack. It is passed in already
+/// composed (typically Strike with no runes socketed) rather than loaded
+/// here, since Gameplay cannot depend on Relicbound.Content; the caller
+/// (the Godot view, or a test) loads and composes it.
+/// </remarks>
+public sealed record CombatSetup(
+    int GridWidth,
+    int GridHeight,
+    IReadOnlyList<Entity> Entities,
+    ulong RandomSeed,
+    ComposedSpell BasicAttack);

@@ -5,6 +5,7 @@ using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
 using Relicbound.Core.Rules;
 using Relicbound.Gameplay.Artifacts;
+using Relicbound.Gameplay.Spells;
 
 namespace Relicbound.Gameplay.Combat;
 
@@ -19,8 +20,6 @@ namespace Relicbound.Gameplay.Combat;
 public sealed class CombatSimulation
 {
     private const int MoveCost = 1;
-    private const int AttackCost = 1;
-    private const int StrikeDamage = 5;
 
     private readonly Grid _grid;
     private readonly IReadOnlyList<Entity> _entities;
@@ -30,6 +29,7 @@ public sealed class CombatSimulation
     private readonly EffectResolver _resolver;
     private readonly IRandomSource _random;
     private readonly TriggerRegistry _triggerRegistry;
+    private readonly ComposedSpell _basicAttack;
 
     public CombatSimulation(CombatSetup setup)
     {
@@ -43,6 +43,7 @@ public sealed class CombatSimulation
         _triggerRegistry = new TriggerRegistry();
         _resolver = new EffectResolver(EventBus, Journal, _triggerRegistry);
         _random = new SplitMix64RandomSource(setup.RandomSeed);
+        _basicAttack = setup.BasicAttack;
 
         foreach (var entity in _entities)
         {
@@ -122,13 +123,11 @@ public sealed class CombatSimulation
 
         if (actorPosition.Point.ManhattanDistance(targetPosition.Point) != 1) { return false; }
 
-        var cost = new ActionCost(AttackCost);
+        var cost = new ActionCost(_basicAttack.Cost);
         if (!_turnResourceModel.CanAfford(actor, cost)) { return false; }
 
         _turnResourceModel.Spend(actor, cost);
-        _resolver.Resolve(
-            new DamageEffect(StrikeDamage),
-            new EffectContext(actor, new[] { target }, _random, depth: 0, EffectOrigin.Direct));
+        CastBasicAttack(actor, target);
 
         CheckForCombatEnd();
         return true;
@@ -222,9 +221,7 @@ public sealed class CombatSimulation
                 var target = FindEntity(targetId);
                 if (target is not null)
                 {
-                    _resolver.Resolve(
-                        new DamageEffect(StrikeDamage),
-                        new EffectContext(enemy, new[] { target }, _random, depth: 0, EffectOrigin.Direct));
+                    CastBasicAttack(enemy, target);
                 }
 
                 break;
@@ -232,6 +229,22 @@ public sealed class CombatSimulation
 
         intent.Clear();
         CheckForCombatEnd();
+    }
+
+    /// <remarks>
+    /// Every basic attack -- player or enemy -- casts the same composed
+    /// Strike, resolving each of its effects in order. A composed spell can
+    /// carry more than one effect (e.g. damage plus an applied status), so
+    /// this is a loop even though today's Strike content has exactly one.
+    /// </remarks>
+    private void CastBasicAttack(Entity caster, Entity target)
+    {
+        foreach (var effect in _basicAttack.Effects)
+        {
+            _resolver.Resolve(
+                effect,
+                new EffectContext(caster, new[] { target }, _random, depth: 0, EffectOrigin.Direct));
+        }
     }
 
     private bool IsOccupied(GridPoint point)

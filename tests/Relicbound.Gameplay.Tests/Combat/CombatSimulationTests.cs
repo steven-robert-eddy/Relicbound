@@ -1,15 +1,33 @@
+using Relicbound.Core.Effects;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
 using Relicbound.Core.Rules;
+using Relicbound.Core.Tags;
 using Relicbound.Gameplay.Combat;
+using Relicbound.Gameplay.Spells;
 using Xunit;
 
 namespace Relicbound.Gameplay.Tests.Combat;
 
 public class CombatSimulationTests
 {
+    // Same numbers the old hardcoded StrikeDamage/AttackCost constants used,
+    // so every existing assertion in this file stays meaningful -- this is
+    // deliberately what src/Relicbound.Content/Spells/strike.json describes,
+    // just constructed inline rather than loaded, to keep these tests free
+    // of file I/O.
+    private static ComposedSpell BasicAttackSpell() => new(
+        Name: "Strike",
+        Cost: 1,
+        Tags: System.Array.Empty<Tag>(),
+        Targeting: TargetingMode.Single,
+        ChainAdditionalTargets: null,
+        ChainFalloffPercent: null,
+        Effects: new Effect[] { new DamageEffect(5) });
+
     private static CombatSimulation CreateSimulation(
-        int playerHealth = 30, int enemyHealth = 20, int enemyX = 5, int enemyY = 3)
+        int playerHealth = 30, int enemyHealth = 20, int enemyX = 5, int enemyY = 3,
+        ComposedSpell? basicAttack = null)
     {
         var player = new Entity(new EntityId(1), "Player");
         player.Add(new PlayerControlled());
@@ -20,7 +38,7 @@ public class CombatSimulationTests
         goblin.Add(new Health(enemyHealth));
         goblin.Add(new GridPosition(new GridPoint(enemyX, enemyY)));
 
-        var setup = new CombatSetup(9, 7, new Entity[] { player, goblin }, RandomSeed: 1);
+        var setup = new CombatSetup(9, 7, new Entity[] { player, goblin }, RandomSeed: 1, basicAttack ?? BasicAttackSpell());
         return new CombatSimulation(setup);
     }
 
@@ -47,6 +65,32 @@ public class CombatSimulationTests
 
         Assert.False(moved);
         Assert.Equal(3, sim.PlayerActionPoints);
+    }
+
+    [Fact]
+    public void RequestAttack_UsesTheInjectedBasicAttacksCostAndEffects_NotAHardcodedValue()
+    {
+        // Deliberately different numbers from BasicAttackSpell()'s 5/1, so
+        // this can only pass if RequestAttack actually reads CombatSetup's
+        // BasicAttack rather than some leftover hardcoded Strike constant.
+        var customAttack = new ComposedSpell(
+            Name: "Custom Strike",
+            Cost: 2,
+            Tags: System.Array.Empty<Tag>(),
+            Targeting: TargetingMode.Single,
+            ChainAdditionalTargets: null,
+            ChainFalloffPercent: null,
+            Effects: new Effect[] { new DamageEffect(9) });
+
+        var sim = CreateSimulation(enemyX: 4, enemyY: 3, basicAttack: customAttack);
+        var player = sim.Entities[0];
+        var goblin = sim.Entities[1];
+
+        var attacked = sim.RequestAttack(player.Id, goblin.Id);
+
+        Assert.True(attacked);
+        Assert.Equal(11, goblin.Get<Health>()!.Current); // 20 - 9
+        Assert.Equal(1, sim.PlayerActionPoints); // 3 - 2
     }
 
     [Fact]
