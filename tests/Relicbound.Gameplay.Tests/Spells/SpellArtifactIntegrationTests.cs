@@ -48,6 +48,7 @@ public class SpellArtifactIntegrationTests
         Tags: new[] { Tag.Fire },
         Trigger: EventType.DamageDealt,
         Effects: new[] { new EffectDefinition(EffectDefinitionType.Heal, Value: 3) },
+        EffectTarget: EffectTargetSelector.Self,
         RequiredTag: Tag.Fire);
 
     [Fact]
