@@ -7,6 +7,9 @@
 .godot/
 game/.godot/
 
+# Backup files left by Godot's SDK-version migration prompt.
+*.csproj.old
+
 # Exported builds
 export/
 build/
