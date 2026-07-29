@@ -68,6 +68,20 @@ public class CombatSimulationTests
     }
 
     [Fact]
+    public void RequestMove_OntoAnotherEntitysTile_Fails()
+    {
+        var sim = CreateSimulation(enemyX: 4, enemyY: 3);
+        var player = sim.Entities[0];
+        var goblin = sim.Entities[1];
+
+        var moved = sim.RequestMove(player.Id, goblin.Get<GridPosition>()!.Point);
+
+        Assert.False(moved);
+        Assert.Equal(new GridPoint(3, 3), player.Get<GridPosition>()!.Point);
+        Assert.Equal(3, sim.PlayerActionPoints);
+    }
+
+    [Fact]
     public void RequestAttack_UsesTheInjectedBasicAttacksCostAndEffects_NotAHardcodedValue()
     {
         // Deliberately different numbers from BasicAttackSpell()'s 5/1, so
@@ -156,6 +170,29 @@ public class CombatSimulationTests
         sim.EndPlayerTurn();
 
         Assert.Equal(startingHealth - 5, player.Get<Health>()!.Current);
+    }
+
+    [Fact]
+    public void EndPlayerTurn_EnemyMoveIntent_SkipsIfTheDestinationFilledUpSinceItWasDeclared()
+    {
+        // Goblin starts two tiles away, so its intent for this round is
+        // "step to (4, 3)" -- the tile directly between it and the player.
+        var sim = CreateSimulation(enemyX: 5, enemyY: 3);
+        var player = sim.Entities[0];
+        var goblin = sim.Entities[1];
+
+        Assert.Equal(IntentKind.Move, goblin.Get<Intent>()!.Kind);
+        Assert.Equal(new GridPoint(4, 3), goblin.Get<Intent>()!.TargetPosition);
+
+        // The player moves onto that exact tile during their own turn.
+        Assert.True(sim.RequestMove(player.Id, new GridPoint(4, 3)));
+
+        // The goblin's stale plan would now land it on the player's tile --
+        // it must stand still instead of the two entities sharing a square.
+        sim.EndPlayerTurn();
+
+        Assert.Equal(new GridPoint(5, 3), goblin.Get<GridPosition>()!.Point);
+        Assert.NotEqual(goblin.Get<GridPosition>()!.Point, player.Get<GridPosition>()!.Point);
     }
 
     [Fact]

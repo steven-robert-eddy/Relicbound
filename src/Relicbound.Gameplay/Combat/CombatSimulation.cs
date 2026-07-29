@@ -102,9 +102,7 @@ public sealed class CombatSimulation
         if (!_turnResourceModel.CanAfford(actor, cost)) { return false; }
 
         _turnResourceModel.Spend(actor, cost);
-        _resolver.Resolve(
-            new MoveEffect(destination),
-            new EffectContext(actor, new[] { actor }, _random, depth: 0, EffectOrigin.Direct));
+        MoveTo(actor, destination);
 
         return true;
     }
@@ -211,10 +209,13 @@ public sealed class CombatSimulation
 
         switch (intent.Kind)
         {
-            case IntentKind.Move when intent.TargetPosition is { } destination:
-                _resolver.Resolve(
-                    new MoveEffect(destination),
-                    new EffectContext(enemy, new[] { enemy }, _random, depth: 0, EffectOrigin.Direct));
+            // Intent was declared at the start of the round, before the
+            // player acted -- the tile it was aiming for may have filled up
+            // since (most commonly: the player moved there). Re-check
+            // occupancy rather than trusting the stale plan; if it's no
+            // longer clear, the enemy just stands still this turn.
+            case IntentKind.Move when intent.TargetPosition is { } destination && !IsOccupied(destination):
+                MoveTo(enemy, destination);
                 break;
 
             case IntentKind.Attack when intent.TargetEntityId is { } targetId:
@@ -246,6 +247,19 @@ public sealed class CombatSimulation
                 effect,
                 new EffectContext(caster, new[] { target }, _random, depth: 0, EffectOrigin.Direct));
         }
+    }
+
+    /// <remarks>
+    /// The only place that resolves a MoveEffect. Every caller must check
+    /// IsOccupied against the destination first -- Grid itself tracks no
+    /// occupancy (src/Relicbound.Core/Rules/Grid.cs), so this is the one
+    /// seam that keeps two entities from ever sharing a tile.
+    /// </remarks>
+    private void MoveTo(Entity actor, GridPoint destination)
+    {
+        _resolver.Resolve(
+            new MoveEffect(destination),
+            new EffectContext(actor, new[] { actor }, _random, depth: 0, EffectOrigin.Direct));
     }
 
     private bool IsOccupied(GridPoint point)
