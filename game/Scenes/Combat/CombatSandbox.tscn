@@ -40,3 +40,41 @@ offset_top = 480.0
 offset_right = 800.0
 offset_bottom = 520.0
 text = "End Turn"
+
+[node name="SpellForge" type="Control" parent="UI"]
+
+[node name="ForgeTitle" type="Label" parent="UI/SpellForge"]
+offset_left = 40.0
+offset_top = 500.0
+offset_right = 616.0
+offset_bottom = 524.0
+text = "Spell Forge — Bolt"
+
+[node name="Socket1Button" type="Button" parent="UI/SpellForge"]
+offset_left = 40.0
+offset_top = 528.0
+offset_right = 220.0
+offset_bottom = 560.0
+text = "Socket 1: (empty)"
+
+[node name="Socket2Button" type="Button" parent="UI/SpellForge"]
+offset_left = 230.0
+offset_top = 528.0
+offset_right = 410.0
+offset_bottom = 560.0
+text = "Socket 2: (empty)"
+
+[node name="PreviewLabel" type="Label" parent="UI/SpellForge"]
+offset_left = 40.0
+offset_top = 568.0
+offset_right = 616.0
+offset_bottom = 616.0
+autowrap_mode = 2
+text = "Preview: Bolt — 1 AP — Tags: Void"
+
+[node name="StartFightButton" type="Button" parent="UI/SpellForge"]
+offset_left = 40.0
+offset_top = 624.0
+offset_right = 200.0
+offset_bottom = 656.0
+text = "Start Fight"

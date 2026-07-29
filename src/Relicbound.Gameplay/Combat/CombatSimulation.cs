@@ -233,9 +233,10 @@ public sealed class CombatSimulation
 
     /// <remarks>
     /// Every basic attack -- player or enemy -- casts the same composed
-    /// Strike, resolving each of its effects in order. A composed spell can
-    /// carry more than one effect (e.g. damage plus an applied status), so
-    /// this is a loop even though today's Strike content has exactly one.
+    /// spell (CombatSetup.BasicAttack), resolving each of its effects in
+    /// order. A composed spell can carry more than one effect (e.g. damage
+    /// plus a Flame Rune's applied Burn), so this is a loop even when the
+    /// content behind it has exactly one.
     /// </remarks>
     private void CastBasicAttack(Entity caster, Entity target)
     {

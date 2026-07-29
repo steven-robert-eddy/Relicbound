@@ -4,6 +4,7 @@ using System.Linq;
 using Godot;
 using Relicbound.Content;
 using Relicbound.Content.Artifacts;
+using Relicbound.Content.Runes;
 using Relicbound.Content.Spells;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
@@ -20,6 +21,13 @@ namespace Relicbound.Game.Scenes.Combat;
 /// calls, and re-renders from the Journal and entity state after every
 /// action. No gameplay rules live here — this only displays what the
 /// simulation already decided. See docs/CODING_STANDARDS.md.
+///
+/// Before a fight starts, it also owns the Spell Forge panel (Milestone 3
+/// issue 3.9): socket/unsocket buttons mutate only which RuneDefinition
+/// occupies which slot in this view, and the preview label is recomputed by
+/// calling the real SpellComposer.Compose on every change -- composition
+/// itself stays entirely in Gameplay. "Start Fight" composes once more and
+/// that composed spell becomes the fight's basic attack.
 /// </remarks>
 public partial class CombatSandboxView : Node2D
 {
@@ -30,11 +38,23 @@ public partial class CombatSandboxView : Node2D
     private Label? _apLabel;
     private Label? _artifactsLabel;
     private Button? _endTurnButton;
+    private Button? _socket1Button;
+    private Button? _socket2Button;
+    private Label? _previewLabel;
+    private Button? _startFightButton;
 
     private readonly Dictionary<EntityId, TokenView> _tokens = new();
     private int _journalEntriesRendered;
     private EntityId _playerId;
     private EntityId _enemyId;
+
+    // The spell the forge panel lets the player socket runes into. Bolt has
+    // two sockets, so it's the one that can actually demonstrate the
+    // Milestone 3 proof (docs/GAME_DESIGN.md section 7): Bolt + Flame Rune +
+    // Chain Rune = Inferno Chain Bolt, carrying the Fire tag.
+    private SpellDefinition? _forgeSpell;
+    private readonly List<RuneDefinition> _availableRunes = new();
+    private RuneDefinition?[] _sockets = Array.Empty<RuneDefinition?>();
 
     public override void _Ready()
     {
@@ -44,13 +64,82 @@ public partial class CombatSandboxView : Node2D
         _apLabel = GetNode<Label>("UI/APLabel");
         _artifactsLabel = GetNode<Label>("UI/ArtifactsLabel");
         _endTurnButton = GetNode<Button>("UI/EndTurnButton");
+        _socket1Button = GetNode<Button>("UI/SpellForge/Socket1Button");
+        _socket2Button = GetNode<Button>("UI/SpellForge/Socket2Button");
+        _previewLabel = GetNode<Label>("UI/SpellForge/PreviewLabel");
+        _startFightButton = GetNode<Button>("UI/SpellForge/StartFightButton");
 
         _endTurnButton.Pressed += OnEndTurnPressed;
 
-        StartNewFight();
+        var spells = SpellContentLoader.LoadEmbedded(ContentAssembly.Reference);
+        _forgeSpell = spells.First(s => s.Id == "bolt");
+        _availableRunes.AddRange(RuneContentLoader.LoadEmbedded(ContentAssembly.Reference));
+        _sockets = new RuneDefinition?[_forgeSpell.Sockets];
+
+        _socket1Button.Pressed += () => OnSocketButtonPressed(0);
+        _socket2Button.Pressed += () => OnSocketButtonPressed(1);
+        _startFightButton.Pressed += OnStartFightPressed;
+
+        RefreshForge();
     }
 
-    private void StartNewFight()
+    /// <remarks>
+    /// Clicking a socket cycles it through "empty", then every rune not
+    /// already socketed elsewhere, back to "empty" -- one control does both
+    /// socketing and unsocketing. A rune can't occupy two sockets at once;
+    /// that's a UI-level constraint, not a rule SpellComposer enforces.
+    /// </remarks>
+    private void OnSocketButtonPressed(int socketIndex)
+    {
+        var usedElsewhere = _sockets
+            .Where((rune, i) => i != socketIndex && rune is not null)
+            .Select(rune => rune!)
+            .ToList();
+
+        var options = new List<RuneDefinition?> { null };
+        options.AddRange(_availableRunes.Where(r => !usedElsewhere.Contains(r)));
+
+        var currentIndex = options.IndexOf(_sockets[socketIndex]);
+        _sockets[socketIndex] = options[(currentIndex + 1) % options.Count];
+
+        RefreshForge();
+    }
+
+    private void RefreshForge()
+    {
+        if (_forgeSpell is null) { return; }
+
+        var socketButtons = new[] { _socket1Button!, _socket2Button! };
+        for (var i = 0; i < socketButtons.Length; i++)
+        {
+            var rune = i < _sockets.Length ? _sockets[i] : null;
+            socketButtons[i].Text = $"Socket {i + 1}: {(rune is null ? "(empty)" : rune.Name)}";
+        }
+
+        var composed = SpellComposer.Compose(_forgeSpell, SocketedRunes());
+        var tags = composed.Tags.Count == 0 ? "(none)" : string.Join(", ", composed.Tags);
+        _previewLabel!.Text = $"Preview: {composed.Name} — {composed.Cost} AP — Tags: {tags}";
+    }
+
+    private void OnStartFightPressed()
+    {
+        if (_forgeSpell is null) { return; }
+
+        var composed = SpellComposer.Compose(_forgeSpell, SocketedRunes());
+
+        _socket1Button!.Disabled = true;
+        _socket2Button!.Disabled = true;
+        _startFightButton!.Disabled = true;
+
+        StartNewFight(composed);
+    }
+
+    private List<RuneDefinition> SocketedRunes()
+    {
+        return _sockets.Where(r => r is not null).Select(r => r!).ToList();
+    }
+
+    private void StartNewFight(ComposedSpell basicAttack)
     {
         var player = new Entity(new EntityId(1), "Player");
         player.Add(new PlayerControlled());
@@ -76,12 +165,6 @@ public partial class CombatSandboxView : Node2D
 
         _playerId = player.Id;
         _enemyId = goblin.Id;
-
-        // The basic attack both sides use is real spell content -- Strike,
-        // composed with no runes socketed -- not a hardcoded damage number.
-        var spells = SpellContentLoader.LoadEmbedded(ContentAssembly.Reference);
-        var strike = spells.First(s => s.Id == "strike");
-        var basicAttack = SpellComposer.Compose(strike, Array.Empty<RuneDefinition>());
 
         var setup = new CombatSetup(
             _gridView!.Columns,
