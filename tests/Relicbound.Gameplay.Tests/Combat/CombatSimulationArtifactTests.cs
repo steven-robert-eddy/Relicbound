@@ -1,15 +1,28 @@
+using Relicbound.Core.Effects;
 using Relicbound.Core.Entities;
 using Relicbound.Core.Events;
 using Relicbound.Core.Rules;
 using Relicbound.Core.Tags;
 using Relicbound.Gameplay.Artifacts;
 using Relicbound.Gameplay.Combat;
+using Relicbound.Gameplay.Spells;
 using Xunit;
 
 namespace Relicbound.Gameplay.Tests.Combat;
 
 public class CombatSimulationArtifactTests
 {
+    // Same numbers the old hardcoded StrikeDamage/AttackCost constants used --
+    // see CombatSimulationTests.BasicAttackSpell for the same convention.
+    private static ComposedSpell BasicAttackSpell() => new(
+        Name: "Strike",
+        Cost: 1,
+        Tags: System.Array.Empty<Tag>(),
+        Targeting: TargetingMode.Single,
+        ChainAdditionalTargets: null,
+        ChainFalloffPercent: null,
+        Effects: new Effect[] { new DamageEffect(5) });
+
     private static ArtifactDefinition EmberHeart() => new(
         Id: "ember_heart",
         Name: "Ember Heart",
@@ -42,7 +55,7 @@ public class CombatSimulationArtifactTests
         goblin.Add(new Health(enemyHealth));
         goblin.Add(new GridPosition(new GridPoint(enemyX, enemyY)));
 
-        var setup = new CombatSetup(9, 7, new Entity[] { player, goblin }, RandomSeed: 1);
+        var setup = new CombatSetup(9, 7, new Entity[] { player, goblin }, RandomSeed: 1, BasicAttackSpell());
         return (new CombatSimulation(setup), player, goblin);
     }
 
