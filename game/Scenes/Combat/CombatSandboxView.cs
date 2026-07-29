@@ -11,6 +11,7 @@ using Relicbound.Core.Events;
 using Relicbound.Core.Rules;
 using Relicbound.Gameplay.Artifacts;
 using Relicbound.Gameplay.Combat;
+using Relicbound.Gameplay.Encounters;
 using Relicbound.Gameplay.Runes;
 using Relicbound.Gameplay.Spells;
 
@@ -28,9 +29,18 @@ namespace Relicbound.Game.Scenes.Combat;
 /// calling the real SpellComposer.Compose on every change -- composition
 /// itself stays entirely in Gameplay. "Start Fight" composes once more and
 /// that composed spell becomes the fight's basic attack.
+///
+/// Configure lets a caller (ExpeditionMapView) supply the encounter, the
+/// player's carried-over health, and a shared random seed instead of the
+/// standalone hardcoded goblin -- call it after Instantiate() and before
+/// AddChild(), i.e. before _Ready() runs. Standing this scene up directly
+/// with no Configure call still works (a single default Goblin), which is
+/// what running CombatSandbox.tscn on its own still does.
 /// </remarks>
 public partial class CombatSandboxView : Node2D
 {
+    private static readonly EncounterEnemy DefaultEnemy = new("goblin", "Goblin", 20);
+
     private CombatSimulation? _simulation;
     private GridView? _gridView;
     private Node2D? _tokensLayer;
@@ -46,7 +56,13 @@ public partial class CombatSandboxView : Node2D
     private readonly Dictionary<EntityId, TokenView> _tokens = new();
     private int _journalEntriesRendered;
     private EntityId _playerId;
-    private EntityId _enemyId;
+    private List<EntityId> _enemyIds = new();
+    private bool _combatResolutionReported;
+
+    private IReadOnlyList<EncounterEnemy> _pendingEnemies = new[] { DefaultEnemy };
+    private int _pendingPlayerHealth = 30;
+    private ulong _pendingRandomSeed = (ulong)DateTimeOffset.UtcNow.Ticks;
+    private Action<bool>? _onCombatResolved;
 
     // The spell the forge panel lets the player socket runes into. Bolt has
     // two sockets, so it's the one that can actually demonstrate the
@@ -55,6 +71,20 @@ public partial class CombatSandboxView : Node2D
     private SpellDefinition? _forgeSpell;
     private readonly List<RuneDefinition> _availableRunes = new();
     private RuneDefinition?[] _sockets = Array.Empty<RuneDefinition?>();
+
+    public void Configure(IReadOnlyList<EncounterEnemy> enemies, int playerHealth, ulong randomSeed, Action<bool> onCombatResolved)
+    {
+        _pendingEnemies = enemies.Count > 0 ? enemies : new[] { DefaultEnemy };
+        _pendingPlayerHealth = playerHealth;
+        _pendingRandomSeed = randomSeed;
+        _onCombatResolved = onCombatResolved;
+    }
+
+    /// <remarks>
+    /// Valid once combat is over -- lets a caller carry the player's ending
+    /// health into whatever fight comes next in an expedition.
+    /// </remarks>
+    public int? PlayerHealthRemaining => FindEntity(_playerId)?.Get<Health>()?.Current;
 
     public override void _Ready()
     {
@@ -143,7 +173,7 @@ public partial class CombatSandboxView : Node2D
     {
         var player = new Entity(new EntityId(1), "Player");
         player.Add(new PlayerControlled());
-        player.Add(new Health(30));
+        player.Add(new Health(_pendingPlayerHealth));
         player.Add(new GridPosition(new GridPoint(1, 3)));
 
         // A live demonstration of Milestone 2's actual proof: equipping
@@ -159,18 +189,26 @@ public partial class CombatSandboxView : Node2D
             player.Add(equipment);
         }
 
-        var goblin = new Entity(new EntityId(2), "Goblin");
-        goblin.Add(new Health(20));
-        goblin.Add(new GridPosition(new GridPoint(7, 3)));
+        var spawnPoints = EnemySpawnPoints(_pendingEnemies.Count);
+        var enemies = new List<Entity>();
+        for (var i = 0; i < _pendingEnemies.Count; i++)
+        {
+            var spec = _pendingEnemies[i];
+            var enemy = new Entity(new EntityId(2 + i), spec.Name);
+            enemy.Add(new Health(spec.Health));
+            enemy.Add(new GridPosition(spawnPoints[i]));
+            enemies.Add(enemy);
+        }
 
         _playerId = player.Id;
-        _enemyId = goblin.Id;
+        _enemyIds = enemies.Select(e => e.Id).ToList();
+        _combatResolutionReported = false;
 
         var setup = new CombatSetup(
             _gridView!.Columns,
             _gridView.Rows,
-            new Entity[] { player, goblin },
-            (ulong)DateTimeOffset.UtcNow.Ticks,
+            new Entity[] { player }.Concat(enemies).ToArray(),
+            _pendingRandomSeed,
             basicAttack);
 
         _simulation = new CombatSimulation(setup);
@@ -194,6 +232,21 @@ public partial class CombatSandboxView : Node2D
         RenderState();
     }
 
+    // A vertical line at the far side of the grid, centered on row 3 (the
+    // player's own row). Distinct, in-bounds tiles for up to a handful of
+    // enemies -- enough for every encounter this content currently defines.
+    private static IReadOnlyList<GridPoint> EnemySpawnPoints(int count)
+    {
+        var startRow = 3 - (count - 1) / 2;
+        var points = new List<GridPoint>(count);
+        for (var i = 0; i < count; i++)
+        {
+            points.Add(new GridPoint(7, startRow + i));
+        }
+
+        return points;
+    }
+
     public override void _UnhandledInput(InputEvent @event)
     {
         if (_simulation is null || _simulation.IsCombatOver) { return; }
@@ -206,11 +259,12 @@ public partial class CombatSandboxView : Node2D
         var localPosition = _gridView!.ToLocal(mouseButton.GlobalPosition);
         var tile = _gridView.PixelToTile(localPosition);
 
-        var enemy = FindEntity(_enemyId);
-        var enemyTile = enemy?.Get<GridPosition>()?.Point;
+        var targetEnemy = _enemyIds
+            .Select(FindEntity)
+            .FirstOrDefault(e => e is not null && e.Get<GridPosition>()?.Point == tile);
 
-        var handled = enemyTile is { } occupiedTile && occupiedTile == tile
-            ? _simulation.RequestAttack(_playerId, _enemyId)
+        var handled = targetEnemy is not null
+            ? _simulation.RequestAttack(_playerId, targetEnemy.Id)
             : _simulation.RequestMove(_playerId, tile);
 
         if (handled)
@@ -285,10 +339,12 @@ public partial class CombatSandboxView : Node2D
             _combatLog!.Text += DescribeEvent(entries[_journalEntriesRendered]) + "\n";
         }
 
-        if (_simulation.IsCombatOver)
+        if (_simulation.IsCombatOver && !_combatResolutionReported)
         {
-            var outcome = _simulation.Winner == CombatWinner.Player ? "Victory!" : "Defeat.";
-            _combatLog!.Text += $"-- Combat over: {outcome} --\n";
+            _combatResolutionReported = true;
+            var playerWon = _simulation.Winner == CombatWinner.Player;
+            _combatLog!.Text += $"-- Combat over: {(playerWon ? "Victory!" : "Defeat.")} --\n";
+            _onCombatResolved?.Invoke(playerWon);
         }
     }
 
